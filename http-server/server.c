@@ -27,7 +27,6 @@ int main()
     }
 
     int bind_result = bind(sockfd, res->ai_addr, res->ai_addrlen);
-    printf("Bind result is: %d\n", bind_result);
 
     freeaddrinfo(res);
 
@@ -52,12 +51,19 @@ int main()
     char received_request[max_len];
     memset(received_request, 0, max_len);
     int num_bytes = recv(new_fd, received_request, max_len, 0);
-    printf("num_bytes = %d\n", num_bytes);
-    perror("Reception error");
-
-    for (int i = 0; i < num_bytes; ++i)
+    if (strncmp(received_request, "GET", 3) == 0)
     {
-        putchar(received_request[i]);
+        printf("Received HTTP GET request!\n");
+
+        // We respond to the HHTP GET request
+        int response_len = 100000;
+        char response[response_len];
+        int sent_bytes = send(new_fd, response, response_len, 0);
+    }
+    else
+    {
+        printf("Received NON-GET request. Ignoring...\n");
+        exit(-1);
     }
 
     close(new_fd);
