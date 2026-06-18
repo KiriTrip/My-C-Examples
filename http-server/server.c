@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <netdb.h>
+#include <string.h>
 
 int main()
 {
@@ -14,19 +15,52 @@ int main()
         exit(-1);
     }
     struct addrinfo hint, *res;
+    memset(&hint, 0, sizeof(hint));
     hint.ai_family = AF_INET;
     hint.ai_socktype = SOCK_STREAM;
     hint.ai_flags = AI_PASSIVE;
 
-    getaddrinfo(NULL, "8080", &hint, &res);
-    int bind_result = bind(sockfd, res->ai_addr, res->ai_addrlen);
+    if (getaddrinfo(NULL, "8080", &hint, &res) != 0)
+    {
+        perror("Getaddrinfo error");
+        exit(-1);
+    }
 
+    int bind_result = bind(sockfd, res->ai_addr, res->ai_addrlen);
     printf("Bind result is: %d\n", bind_result);
 
-    while (1)
+    freeaddrinfo(res);
+
+    // Listen for incoming connections!
+    int listen_result = listen(sockfd, 20);
+    if (listen_result < 0)
     {
-        // Some kind of request must be received here
-        printf("Waiting for request ...\n");
-        sleep(1);
+        perror("Listen error");
+        exit(-1);
     }
+
+    struct sockaddr_storage their_addr;
+    socklen_t addr_size = sizeof(their_addr);
+    int new_fd = accept(sockfd, (struct sockaddr*)&their_addr, &addr_size);
+    if (new_fd < 0)
+    {
+        perror("Accept error");
+        exit(-1);
+    }
+    
+    int max_len = 1000;
+    char received_request[max_len];
+    memset(received_request, 0, max_len);
+    int num_bytes = recv(new_fd, received_request, max_len, 0);
+    printf("num_bytes = %d\n", num_bytes);
+    perror("Reception error");
+
+    for (int i = 0; i < num_bytes; ++i)
+    {
+        putchar(received_request[i]);
+    }
+
+    close(new_fd);
+    close(sockfd);
+    return 0;
 }
