@@ -14,6 +14,10 @@ int main()
         perror("Socket error");
         exit(-1);
     }
+
+    int yes = 1;
+    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+
     struct addrinfo hint, *res;
     memset(&hint, 0, sizeof(hint));
     hint.ai_family = AF_INET;
@@ -56,9 +60,18 @@ int main()
         printf("Received HTTP GET request!\n");
 
         // We respond to the HHTP GET request
-        int response_len = 100000;
-        char response[response_len];
-        int sent_bytes = send(new_fd, response, response_len, 0);
+        char *status_line = "HTTP/1.1 200 OK\r\n";
+        send(new_fd, status_line, strlen(status_line), 0);
+        
+        char *headers = "Content-Type: text/html\r\n\r\n";
+        send(new_fd, headers, strlen(headers), 0);
+        
+        FILE* index_file = fopen("index.html", "r");
+        char c;
+        while ( (c = getc(index_file)) != EOF )
+        {
+            send(new_fd, &c, 1, 0);
+        }
     }
     else
     {
